@@ -1,0 +1,43 @@
+{
+  "source": {
+    "inventory_url": "https://www.tcdb.com/ViewCollectionMode.cfm?Member=RSmith1217&CollectionID=1&MODE=&Filter=S&Type=MMA",
+    "site": "tcdb.com",
+    "sport": "MMA",
+    "page_mode": "PageIndex",
+    "max_page_requested": 1,
+    "delay_ms": 2000,
+    "jitter_ms": 500
+  },
+  "generated_at": "2026-02-13T19:04:35.441Z",
+  "totals": {
+    "cards": 2,
+    "units": 2,
+    "priced_cards": 0
+  },
+  "cards": [
+    {
+      "card_url": "https://www.tcdb.com/ViewCard.cfm/sid/333281/cid/20262929/2022-Donruss-Optic-UFC-17-Chuck-Liddell",
+      "sport": "MMA",
+      "set_name": "2022 Donruss Optic UFC",
+      "card_number": "17",
+      "card_name": "Chuck Liddell",
+      "player": "Chuck Liddell",
+      "team": "",
+      "quantity": 1,
+      "tcdb_price": null,
+      "tcdb_price_source": ""
+    },
+    {
+      "card_url": "https://www.tcdb.com/ViewCard.cfm/sid/333281/cid/20263001/2022-Donruss-Optic-UFC-89-Michelle-Waterson",
+      "sport": "MMA",
+      "set_name": "2022 Donruss Optic UFC",
+      "card_number": "89",
+      "card_name": "Michelle Waterson",
+      "player": "Michelle Waterson",
+      "team": "",
+      "quantity": 1,
+      "tcdb_price": null,
+      "tcdb_price_source": ""
+    }
+  ]
+}
