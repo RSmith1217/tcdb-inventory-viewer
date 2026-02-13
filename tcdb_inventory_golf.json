@@ -1,0 +1,43 @@
+{
+  "source": {
+    "inventory_url": "https://www.tcdb.com/ViewCollectionMode.cfm?Member=RSmith1217&CollectionID=1&MODE=&Filter=S&Type=Golf",
+    "site": "tcdb.com",
+    "sport": "Golf",
+    "page_mode": "PageIndex",
+    "max_page_requested": 1,
+    "delay_ms": 2000,
+    "jitter_ms": 500
+  },
+  "generated_at": "2026-02-13T19:04:06.221Z",
+  "totals": {
+    "cards": 2,
+    "units": 2,
+    "priced_cards": 2
+  },
+  "cards": [
+    {
+      "card_url": "https://www.tcdb.com/ViewCard.cfm/sid/57900/cid/2636197/1991-Pro-Set-PGA-Tour-75-Curtis-Strange",
+      "sport": "Golf",
+      "set_name": "1991 Pro Set PGA Tour",
+      "card_number": "75",
+      "card_name": "Curtis Strange",
+      "player": "Curtis Strange",
+      "team": "",
+      "quantity": 1,
+      "tcdb_price": 0.2,
+      "tcdb_price_source": "tcdb-page"
+    },
+    {
+      "card_url": "https://www.tcdb.com/ViewCard.cfm/sid/68052/cid/4995033/2001-Upper-Deck-97-David-Duval",
+      "sport": "Golf",
+      "set_name": "2001 Upper Deck",
+      "card_number": "97",
+      "card_name": "David Duval",
+      "player": "David Duval",
+      "team": "",
+      "quantity": 1,
+      "tcdb_price": 0.18,
+      "tcdb_price_source": "tcdb-page"
+    }
+  ]
+}

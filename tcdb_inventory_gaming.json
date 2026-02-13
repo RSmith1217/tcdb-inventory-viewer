@@ -1,0 +1,55 @@
+{
+  "source": {
+    "inventory_url": "https://www.tcdb.com/ViewCollectionMode.cfm?Member=RSmith1217&MODE=&Type=Gaming&CollectionID=1",
+    "site": "tcdb.com",
+    "sport": "Gaming",
+    "page_mode": "PageIndex",
+    "max_page_requested": 1,
+    "delay_ms": 2000,
+    "jitter_ms": 500
+  },
+  "generated_at": "2026-02-13T19:03:40.705Z",
+  "totals": {
+    "cards": 3,
+    "units": 3,
+    "priced_cards": 0
+  },
+  "cards": [
+    {
+      "card_url": "https://www.tcdb.com/ViewCard.cfm/sid/168491/cid/10787501/2017-Pokemon-Sun-&-Moon-Crimson-Invasion-36/111-Gastly",
+      "sport": "Gaming",
+      "set_name": "2017 Pokemon Sun & Moon Crimson Invasion",
+      "card_number": "36/111",
+      "card_name": "Gastly",
+      "player": "Gastly",
+      "team": "",
+      "quantity": 1,
+      "tcdb_price": null,
+      "tcdb_price_source": ""
+    },
+    {
+      "card_url": "https://www.tcdb.com/ViewCard.cfm/sid/185009/cid/11778525/2018-Pokemon-Sun-&-Moon-Dragon-Majesty-55/70-Kangaskhan",
+      "sport": "Gaming",
+      "set_name": "2018 Pokemon Sun & Moon Dragon Majesty",
+      "card_number": "55/70",
+      "card_name": "Kangaskhan",
+      "player": "Kangaskhan",
+      "team": "",
+      "quantity": 1,
+      "tcdb_price": null,
+      "tcdb_price_source": ""
+    },
+    {
+      "card_url": "https://www.tcdb.com/ViewCard.cfm/sid/174998/cid/12905545/2018-Pokemon-Sun-&-Moon-Forbidden-Light-57/131-Cubone",
+      "sport": "Gaming",
+      "set_name": "2018 Pokemon Sun & Moon Forbidden Light",
+      "card_number": "57/131",
+      "card_name": "Cubone",
+      "player": "Cubone",
+      "team": "",
+      "quantity": 1,
+      "tcdb_price": null,
+      "tcdb_price_source": ""
+    }
+  ]
+}
