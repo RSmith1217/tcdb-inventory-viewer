@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TCDB Inventory Viewer</title>
+    <style>
+      :root {
+        --bg: #f7f7f8;
+        --panel: #ffffff;
+        --text: #1f2328;
+        --muted: #5b6570;
+        --line: #d0d7de;
+        --accent: #7a0000;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: linear-gradient(180deg, #faf7f7 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      .wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.2rem;
+      }
+
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 8px 25px rgba(20, 20, 20, 0.04);
+      }
+
+      h1 {
+        margin: 0 0 0.35rem;
+        font-size: 1.5rem;
+      }
+
+      .sub {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .controls {
+        margin-top: 1rem;
+        display: grid;
+        gap: 0.7rem;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      }
+
+      label {
+        display: grid;
+        gap: 0.3rem;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      input,
+      select,
+      button {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 0.55rem 0.65rem;
+        font: inherit;
+        background: #fff;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        border-color: #b58b90;
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      .stats {
+        margin-top: 0.9rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        font-size: 0.95rem;
+      }
+
+      .stats span { color: var(--muted); }
+
+      .table-wrap {
+        margin-top: 1rem;
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 940px;
+      }
+
+      th,
+      td {
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        padding: 0.5rem 0.45rem;
+        font-size: 0.9rem;
+        vertical-align: top;
+      }
+
+      th {
+        color: var(--muted);
+        font-weight: 700;
+        position: sticky;
+        top: 0;
+        background: #fff;
+      }
+
+      td.name {
+        max-width: 420px;
+      }
+
+      .pager {
+        margin-top: 0.9rem;
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .hint {
+        margin-top: 0.8rem;
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .error {
+        margin-top: 0.8rem;
+        color: #8d2020;
+        font-size: 0.9rem;
+      }
+
+      a { color: #0b5db2; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="panel">
+        <h1>TCDB Inventory Viewer</h1>
+        <p class="sub">Local viewer for <code>Inventory/data/tcdb_inventory.json</code>.</p>
+
+        <div class="controls">
+          <label>
+            Search
+            <input id="q" type="text" placeholder="set, player, card #" />
+          </label>
+
+          <label>
+            Min Price
+            <input id="minPrice" type="number" step="0.01" min="0" placeholder="0.00" />
+          </label>
+
+          <label>
+            Max Price
+            <input id="maxPrice" type="number" step="0.01" min="0" placeholder="50.00" />
+          </label>
+
+          <label>
+            Min Qty
+            <input id="minQty" type="number" min="1" placeholder="1" />
+          </label>
+
+          <label>
+            Sort
+            <select id="sortBy">
+              <option value="name_asc">Name (A-Z)</option>
+              <option value="name_desc">Name (Z-A)</option>
+              <option value="sport_asc">Sport (A-Z)</option>
+              <option value="set_asc">Set (A-Z)</option>
+              <option value="qty_desc">Quantity (high-low)</option>
+              <option value="qty_asc">Quantity (low-high)</option>
+              <option value="price_desc">Price (high-low)</option>
+              <option value="price_asc">Price (low-high)</option>
+            </select>
+          </label>
+
+          <label>
+            Sport
+            <select id="sportFilter">
+              <option value="">All Sports</option>
+            </select>
+          </label>
+
+          <label>
+            Rows / page
+            <select id="pageSize">
+              <option>25</option>
+              <option selected>50</option>
+              <option>100</option>
+              <option>200</option>
+            </select>
+          </label>
+
+          <label>
+            Load JSON Files
+            <input id="fileInput" type="file" accept="application/json" multiple />
+          </label>
+
+          <label>
+            Actions
+            <button id="reloadBtn" class="btn-primary" type="button">Load/Merge Default Files</button>
+          </label>
+        </div>
+
+        <div class="stats">
+          <div><strong id="shownCount">0</strong> <span>shown</span></div>
+          <div><strong id="totalCount">0</strong> <span>total cards</span></div>
+          <div><strong id="unitsCount">0</strong> <span>total units</span></div>
+        </div>
+
+        <p id="status" class="hint">Loading default JSON...</p>
+        <p id="error" class="error" hidden></p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Sport</th>
+                <th>Set</th>
+                <th>Card #</th>
+                <th>Name</th>
+                <th>Qty</th>
+                <th>TCDB $</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+
+        <div class="pager">
+          <button id="prevBtn" type="button">Prev</button>
+          <span id="pageInfo">Page 1 / 1</span>
+          <button id="nextBtn" type="button">Next</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="viewer.js"></script>
+  </body>
+</html>
