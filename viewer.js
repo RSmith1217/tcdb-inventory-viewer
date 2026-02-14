@@ -5,7 +5,11 @@
     page: 1,
     pageSize: 50,
     selectedQty: new Map(),
+    quantityOverrides: new Map(),
   };
+
+  const INVENTORY_OVERRIDES_KEY = "tcdb_inventory_qty_overrides_v1";
+  const SELLER_CONFIRM_EMAIL = "rsmith17@gmail.com";
 
   const els = {
     q: document.getElementById("q"),
@@ -41,6 +45,7 @@
     copyOrderBtn: document.getElementById("copyOrderBtn"),
     emailOrderBtn: document.getElementById("emailOrderBtn"),
     downloadCsvBtn: document.getElementById("downloadCsvBtn"),
+    finalizeSaleBtn: document.getElementById("finalizeSaleBtn"),
     clearCartBtn: document.getElementById("clearCartBtn"),
     orderPreview: document.getElementById("orderPreview"),
   };
@@ -134,6 +139,29 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  function loadQuantityOverrides() {
+    try {
+      const raw = window.localStorage.getItem(INVENTORY_OVERRIDES_KEY);
+      if (!raw) return new Map();
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object") return new Map();
+      return new Map(
+        Object.entries(parsed).map(([k, v]) => [k, Math.max(0, Math.floor(asNum(v, 0)))])
+      );
+    } catch (_) {
+      return new Map();
+    }
+  }
+
+  function saveQuantityOverrides() {
+    try {
+      const payload = Object.fromEntries(state.quantityOverrides.entries());
+      window.localStorage.setItem(INVENTORY_OVERRIDES_KEY, JSON.stringify(payload));
+    } catch (_) {
+      // ignore storage failures
+    }
+  }
+
   function normalizePayload(payload) {
     if (!payload || !Array.isArray(payload.cards)) {
       throw new Error("JSON missing cards array");
@@ -182,6 +210,14 @@
     const maxQty = Math.max(0, asNum(r.quantity, 1));
     const selected = Math.max(0, asNum(state.selectedQty.get(key), 0));
     return Math.min(maxQty, selected);
+  }
+
+  function applyQuantityOverrides(rows) {
+    for (const r of rows) {
+      const key = rowKey(r);
+      if (!state.quantityOverrides.has(key)) continue;
+      r.quantity = Math.max(0, Math.floor(asNum(state.quantityOverrides.get(key), 0)));
+    }
   }
 
   function getSelectedRows() {
@@ -472,6 +508,7 @@
       if (!loaded.length) throw new Error("No default JSON files found");
 
       state.rows = mergeRows(loaded);
+      applyQuantityOverrides(state.rows);
       state.selectedQty.clear();
       refreshSportFilterOptions();
       setStatus(`Loaded ${state.rows.length} cards from ${loadedNames.length} file(s).`);
@@ -579,8 +616,42 @@
       URL.revokeObjectURL(url);
       setStatus("CSV downloaded.");
     });
+
+    els.finalizeSaleBtn.addEventListener("click", () => {
+      const selectedRows = getSelectedRows();
+      if (!selectedRows.length) {
+        setStatus("Select at least one card before finalizing a sale.");
+        return;
+      }
+
+      const selectedUnits = selectedRows.reduce((s, x) => s + x.qty, 0);
+      const ok = window.confirm(
+        `Finalize sale for ${selectedRows.length} card(s) / ${selectedUnits} unit(s)? This will reduce available inventory in this browser.`
+      );
+      if (!ok) return;
+
+      for (const x of selectedRows) {
+        const r = x.row;
+        const nextQty = Math.max(0, Math.floor(asNum(r.quantity, 0) - x.qty));
+        r.quantity = nextQty;
+        state.quantityOverrides.set(rowKey(r), nextQty);
+      }
+      saveQuantityOverrides();
+      state.selectedQty.clear();
+
+      if (els.selectedOnly.checked) applyFilters();
+      else render();
+
+      const subject = encodeURIComponent("New Card Order To Fulfill");
+      const body = encodeURIComponent(
+        `${buildOrderSummary(selectedRows)}\n\nInventory has been reduced locally in the store app.`
+      );
+      window.location.href = `mailto:${SELLER_CONFIRM_EMAIL}?subject=${subject}&body=${body}`;
+      setStatus("Sale finalized. Inventory updated locally and seller email draft opened.");
+    });
   }
 
+  state.quantityOverrides = loadQuantityOverrides();
   bindEvents();
   loadDefault();
 })();
