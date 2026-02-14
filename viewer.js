@@ -14,7 +14,6 @@
     sortBy: document.getElementById("sortBy"),
     sportFilter: document.getElementById("sportFilter"),
     pageSize: document.getElementById("pageSize"),
-    reloadBtn: document.getElementById("reloadBtn"),
     shownCount: document.getElementById("shownCount"),
     totalCount: document.getElementById("totalCount"),
     unitsCount: document.getElementById("unitsCount"),
@@ -280,8 +279,6 @@
     state.page = Math.min(pages, state.page + 1);
     render();
   });
-
-  els.reloadBtn.addEventListener("click", loadDefault);
 
   loadDefault();
 })();
