@@ -190,6 +190,32 @@
       .filter((x) => x.qty > 0);
   }
 
+  function shippingDetails(method, units) {
+    if (method === "Local pickup") {
+      return { label: "Local pickup", estimate: 0, note: "No shipping charge." };
+    }
+    if (method === "PWE") {
+      const envelopes = Math.max(1, Math.ceil(units / 15));
+      const estimate = units > 0 ? envelopes * 2 : 0;
+      return {
+        label: "PWE",
+        estimate,
+        note: units > 15 ? `Estimated ${envelopes} envelopes x $2.` : "Estimated $2 for one envelope.",
+      };
+    }
+    if (method === "BMWT") {
+      if (units >= 80) {
+        return {
+          label: "Priority Mail",
+          estimate: null,
+          note: "80+ cards ship via Priority Mail flat-rate envelope/box. Final shipping cost requires approval.",
+        };
+      }
+      return { label: "BMWT", estimate: units > 0 ? 8 : 0, note: "Estimated $8 (under 80 cards)." };
+    }
+    return { label: method, estimate: null, note: "Shipping cost to be confirmed." };
+  }
+
   function sorter(mode) {
     switch (mode) {
       case "name_desc":
@@ -251,12 +277,15 @@
     const buyer = els.checkoutName.value.trim() || "(not provided)";
     const email = els.checkoutEmail.value.trim() || "(not provided)";
     const payment = els.checkoutPayment.value;
-    const shipping = els.checkoutShipping.value;
     const notes = els.checkoutNotes.value.trim() || "(none)";
     const stamp = new Date().toLocaleString();
 
     const units = selectedRows.reduce((s, x) => s + x.qty, 0);
     const total = selectedRows.reduce((s, x) => s + asNum(myPrice(x.row.tcdb_price), 0) * x.qty, 0);
+    const missingPriceRows = selectedRows.filter((x) => myPrice(x.row.tcdb_price) == null);
+    const missingPriceUnits = missingPriceRows.reduce((s, x) => s + x.qty, 0);
+    const shipping = shippingDetails(els.checkoutShipping.value, units);
+    const knownWithShipping = shipping.estimate == null ? null : total + shipping.estimate;
 
     const lines = selectedRows.map((x, idx) => {
       const r = x.row;
@@ -275,7 +304,9 @@
       `Buyer: ${buyer}`,
       `Email: ${email}`,
       `Payment: ${payment}`,
-      `Shipping: ${shipping}`,
+      `Shipping preference: ${shipping.label}`,
+      `Shipping estimate: ${shipping.estimate == null ? "Pending approval" : money(shipping.estimate)}`,
+      `Shipping note: ${shipping.note}`,
       `Notes: ${notes}`,
       "",
       "Items:",
@@ -283,7 +314,11 @@
       "",
       `Selected cards: ${selectedRows.length}`,
       `Selected units: ${units}`,
-      `Order total: ${money(total)}`,
+      `Cards subtotal (known prices): ${money(total)}`,
+      `Known total + shipping estimate: ${knownWithShipping == null ? "Pending shipping approval" : money(knownWithShipping)}`,
+      ...(missingPriceRows.length
+        ? [`Unpriced items selected: ${missingPriceRows.length} card(s), ${missingPriceUnits} unit(s). Final card pricing will be sent for approval.`]
+        : []),
     ].join("\n");
   }
 

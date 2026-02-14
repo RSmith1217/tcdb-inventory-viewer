@@ -63,6 +63,20 @@
         font-size: 0.8rem;
       }
 
+      .notice {
+        margin-top: 0.55rem;
+        border: 1px solid #e6cc7c;
+        background: #fff9e9;
+        color: #5c4a12;
+        border-radius: 10px;
+        padding: 0.55rem 0.65rem;
+        font-size: 0.84rem;
+      }
+
+      .notice strong {
+        color: #4b3a0a;
+      }
+
       .layout {
         margin-top: 0.9rem;
         display: grid;
@@ -342,7 +356,8 @@
       <section class="hero">
         <h1>TCDB Card Store</h1>
         <p class="hero-sub">Browse cards, pick exact quantities, and generate a ready-to-send order summary.</p>
-        <p id="buildId" class="build">Build 2026-02-14.2</p>
+        <p id="buildId" class="build">Build 2026-02-14.3</p>
+        <p class="notice"><strong>Pricing note:</strong> Some cards may show a blank price. If selected, we will follow up with a price for your approval before finalizing.</p>
       </section>
 
       <section class="layout">
@@ -450,6 +465,7 @@
         <aside class="panel checkout">
           <h2>Checkout Builder</h2>
           <p class="checkout-sub">Create an order request you can copy, email, or export as CSV.</p>
+          <p class="notice"><strong>Shipping policy:</strong> PWE (up to 15 cards) is $2 per envelope. BMWT is $8 for orders under 80 cards. Orders of 80+ cards ship via Priority Mail using the least expensive flat-rate envelope/box, with final shipping cost sent for approval.</p>
 
           <div id="cartItems" class="cart-items">
             <p class="cart-empty">No cards selected yet.</p>
@@ -505,6 +521,6 @@
       </section>
     </main>
 
-    <script src="viewer.js?v=20260214-2"></script>
+    <script src="viewer.js?v=20260214-3"></script>
   </body>
 </html>
