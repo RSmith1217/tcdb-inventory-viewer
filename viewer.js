@@ -72,6 +72,16 @@
     return `$${Number(v).toFixed(2)}`;
   }
 
+  function myPrice(tcdbPrice) {
+    const price = Number(tcdbPrice);
+    if (!Number.isFinite(price)) return null;
+
+    if (price <= 0.2) return 0.08;
+    if (price < 1) return price * 0.7;
+    if (price < 5) return price * 0.85;
+    return price * 0.95;
+  }
+
   function rowText(r) {
     return `${r.set_name || ""} ${r.card_number || ""} ${r.card_name || ""} ${r.player || ""} ${r.team || ""}`.toLowerCase();
   }
@@ -154,6 +164,7 @@
           <td class="name">${escapeHtml(name)}</td>
           <td>${asNum(r.quantity, 1)}</td>
           <td>${money(r.tcdb_price)}</td>
+          <td>${money(myPrice(r.tcdb_price))}</td>
           <td>${href ? `<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">Open</a>` : "-"}</td>
         </tr>`;
       })
@@ -168,7 +179,7 @@
     els.nextBtn.disabled = state.page >= pages;
 
     if (!pageRows.length) {
-      els.rows.innerHTML = '<tr><td colspan="8">No matching cards.</td></tr>';
+      els.rows.innerHTML = '<tr><td colspan="9">No matching cards.</td></tr>';
     }
   }
 
