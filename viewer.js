@@ -4,7 +4,7 @@
     filtered: [],
     page: 1,
     pageSize: 50,
-    selected: new Set(),
+    selectedQty: new Map(),
   };
 
   const els = {
@@ -24,7 +24,6 @@
     status: document.getElementById("status"),
     error: document.getElementById("error"),
     rows: document.getElementById("rows"),
-    selectPage: document.getElementById("selectPage"),
     prevBtn: document.getElementById("prevBtn"),
     nextBtn: document.getElementById("nextBtn"),
     pageInfo: document.getElementById("pageInfo"),
@@ -166,9 +165,13 @@
         const href = r.card_url || "";
         const name = r.card_name || r.player || "";
         const key = rowKey(r);
-        const checked = state.selected.has(key) ? "checked" : "";
+        const maxQty = Math.max(0, asNum(r.quantity, 1));
+        const selectedQty = Math.min(maxQty, Math.max(0, asNum(state.selectedQty.get(key), 0)));
+        const qtyOptions = Array.from({ length: maxQty + 1 }, (_, n) =>
+          `<option value="${n}" ${n === selectedQty ? "selected" : ""}>${n}</option>`
+        ).join("");
         return `<tr>
-          <td><input class="row-check" type="checkbox" data-row-key="${escapeAttr(key)}" ${checked} /></td>
+          <td><select class="row-qty" data-row-key="${escapeAttr(key)}">${qtyOptions}</select></td>
           <td>${idx}</td>
           <td>${escapeHtml(r.sport || "")}</td>
           <td>${escapeHtml(r.set_name || "")}</td>
@@ -182,9 +185,9 @@
       })
       .join("");
 
-    const selectedRows = state.rows.filter((r) => state.selected.has(rowKey(r)));
-    const selectedUnits = selectedRows.reduce((s, r) => s + asNum(r.quantity, 1), 0);
-    const selectedTotal = selectedRows.reduce((s, r) => s + (myPrice(r.tcdb_price) || 0) * asNum(r.quantity, 1), 0);
+    const selectedRows = state.rows.filter((r) => asNum(state.selectedQty.get(rowKey(r)), 0) > 0);
+    const selectedUnits = selectedRows.reduce((s, r) => s + asNum(state.selectedQty.get(rowKey(r)), 0), 0);
+    const selectedTotal = selectedRows.reduce((s, r) => s + (myPrice(r.tcdb_price) || 0) * asNum(state.selectedQty.get(rowKey(r)), 0), 0);
 
     els.shownCount.textContent = String(total);
     els.totalCount.textContent = String(state.rows.length);
@@ -196,26 +199,10 @@
 
     els.prevBtn.disabled = state.page <= 1;
     els.nextBtn.disabled = state.page >= pages;
-    syncSelectPageCheckbox(pageRows);
 
     if (!pageRows.length) {
       els.rows.innerHTML = '<tr><td colspan="10">No matching cards.</td></tr>';
     }
-  }
-
-  function syncSelectPageCheckbox(pageRows) {
-    if (!els.selectPage) return;
-    if (!pageRows.length) {
-      els.selectPage.checked = false;
-      els.selectPage.indeterminate = false;
-      els.selectPage.disabled = true;
-      return;
-    }
-
-    const selectedOnPage = pageRows.reduce((count, r) => count + (state.selected.has(rowKey(r)) ? 1 : 0), 0);
-    els.selectPage.disabled = false;
-    els.selectPage.checked = selectedOnPage === pageRows.length;
-    els.selectPage.indeterminate = selectedOnPage > 0 && selectedOnPage < pageRows.length;
   }
 
   function escapeHtml(s) {
@@ -318,14 +305,14 @@
 
       if (!loaded.length) throw new Error("No default JSON files found");
       state.rows = mergeRows(loaded);
-      state.selected.clear();
+      state.selectedQty.clear();
       refreshSportFilterOptions();
       setStatus(`Loaded ${state.rows.length} cards from ${loadedNames.length} file(s).`);
       applyFilters();
     } catch (err) {
       state.rows = [];
       state.filtered = [];
-      state.selected.clear();
+      state.selectedQty.clear();
       render();
       setStatus("Could not auto-load default JSON.");
       const isFileProtocol = window.location.protocol === "file:";
@@ -355,26 +342,14 @@
 
   els.rows.addEventListener("change", (ev) => {
     const target = ev.target;
-    if (!(target instanceof HTMLInputElement) || !target.classList.contains("row-check")) return;
+    if (!(target instanceof HTMLSelectElement) || !target.classList.contains("row-qty")) return;
     const key = target.dataset.rowKey || "";
     if (!key) return;
-    if (target.checked) state.selected.add(key);
-    else state.selected.delete(key);
+    const qty = Math.max(0, asNum(target.value, 0));
+    if (qty <= 0) state.selectedQty.delete(key);
+    else state.selectedQty.set(key, qty);
     render();
   });
-
-  if (els.selectPage) {
-    els.selectPage.addEventListener("change", () => {
-      const start = (state.page - 1) * state.pageSize;
-      const pageRows = state.filtered.slice(start, start + state.pageSize);
-      for (const r of pageRows) {
-        const key = rowKey(r);
-        if (els.selectPage.checked) state.selected.add(key);
-        else state.selected.delete(key);
-      }
-      render();
-    });
-  }
 
   loadDefault();
 })();
