@@ -91,6 +91,7 @@
       }
 
       .stats span { color: var(--muted); }
+      .stats .money-strong { color: var(--accent); }
 
       .table-wrap {
         margin-top: 1rem;
@@ -212,6 +213,9 @@
           <div><strong id="shownCount">0</strong> <span>shown</span></div>
           <div><strong id="totalCount">0</strong> <span>total cards</span></div>
           <div><strong id="unitsCount">0</strong> <span>total units</span></div>
+          <div><strong id="selectedCount">0</strong> <span>selected cards</span></div>
+          <div><strong id="selectedUnits">0</strong> <span>selected units</span></div>
+          <div><strong id="selectedTotal" class="money-strong">$0.00</strong> <span>selected total</span></div>
         </div>
 
         <p id="status" class="hint">Loading default JSON...</p>
@@ -221,6 +225,7 @@
           <table>
             <thead>
               <tr>
+                <th><input id="selectPage" type="checkbox" title="Select all visible rows" /></th>
                 <th>#</th>
                 <th>Sport</th>
                 <th>Set</th>

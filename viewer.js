@@ -4,6 +4,7 @@
     filtered: [],
     page: 1,
     pageSize: 50,
+    selected: new Set(),
   };
 
   const els = {
@@ -17,9 +18,13 @@
     shownCount: document.getElementById("shownCount"),
     totalCount: document.getElementById("totalCount"),
     unitsCount: document.getElementById("unitsCount"),
+    selectedCount: document.getElementById("selectedCount"),
+    selectedUnits: document.getElementById("selectedUnits"),
+    selectedTotal: document.getElementById("selectedTotal"),
     status: document.getElementById("status"),
     error: document.getElementById("error"),
     rows: document.getElementById("rows"),
+    selectPage: document.getElementById("selectPage"),
     prevBtn: document.getElementById("prevBtn"),
     nextBtn: document.getElementById("nextBtn"),
     pageInfo: document.getElementById("pageInfo"),
@@ -84,6 +89,10 @@
 
   function rowText(r) {
     return `${r.set_name || ""} ${r.card_number || ""} ${r.card_name || ""} ${r.player || ""} ${r.team || ""}`.toLowerCase();
+  }
+
+  function rowKey(r) {
+    return `${r.sport || ""}|${r.card_url || ""}|${r.set_name || ""}|${r.card_number || ""}|${r.card_name || ""}`;
   }
 
   function setError(msg) {
@@ -156,7 +165,10 @@
         const idx = start + i + 1;
         const href = r.card_url || "";
         const name = r.card_name || r.player || "";
+        const key = rowKey(r);
+        const checked = state.selected.has(key) ? "checked" : "";
         return `<tr>
+          <td><input class="row-check" type="checkbox" data-row-key="${escapeAttr(key)}" ${checked} /></td>
           <td>${idx}</td>
           <td>${escapeHtml(r.sport || "")}</td>
           <td>${escapeHtml(r.set_name || "")}</td>
@@ -170,17 +182,40 @@
       })
       .join("");
 
+    const selectedRows = state.rows.filter((r) => state.selected.has(rowKey(r)));
+    const selectedUnits = selectedRows.reduce((s, r) => s + asNum(r.quantity, 1), 0);
+    const selectedTotal = selectedRows.reduce((s, r) => s + (myPrice(r.tcdb_price) || 0) * asNum(r.quantity, 1), 0);
+
     els.shownCount.textContent = String(total);
     els.totalCount.textContent = String(state.rows.length);
     els.unitsCount.textContent = String(state.filtered.reduce((s, r) => s + asNum(r.quantity, 1), 0));
+    if (els.selectedCount) els.selectedCount.textContent = String(selectedRows.length);
+    if (els.selectedUnits) els.selectedUnits.textContent = String(selectedUnits);
+    if (els.selectedTotal) els.selectedTotal.textContent = money(selectedTotal);
     els.pageInfo.textContent = `Page ${state.page} / ${pages}`;
 
     els.prevBtn.disabled = state.page <= 1;
     els.nextBtn.disabled = state.page >= pages;
+    syncSelectPageCheckbox(pageRows);
 
     if (!pageRows.length) {
-      els.rows.innerHTML = '<tr><td colspan="9">No matching cards.</td></tr>';
+      els.rows.innerHTML = '<tr><td colspan="10">No matching cards.</td></tr>';
     }
+  }
+
+  function syncSelectPageCheckbox(pageRows) {
+    if (!els.selectPage) return;
+    if (!pageRows.length) {
+      els.selectPage.checked = false;
+      els.selectPage.indeterminate = false;
+      els.selectPage.disabled = true;
+      return;
+    }
+
+    const selectedOnPage = pageRows.reduce((count, r) => count + (state.selected.has(rowKey(r)) ? 1 : 0), 0);
+    els.selectPage.disabled = false;
+    els.selectPage.checked = selectedOnPage === pageRows.length;
+    els.selectPage.indeterminate = selectedOnPage > 0 && selectedOnPage < pageRows.length;
   }
 
   function escapeHtml(s) {
@@ -194,6 +229,10 @@
 
   function escapeAttr(s) {
     return escapeHtml(s);
+  }
+
+  function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   function normalizePayload(payload) {
@@ -242,36 +281,59 @@
   }
 
   async function loadDefault() {
+    let failedDetails = [];
     setError("");
     setStatus("Loading default JSON files...");
     try {
       const defaultJsons = await discoverDefaultJsons();
-      const loaded = [];
-      const loadedNames = [];
-      for (const path of defaultJsons) {
-        try {
-          const res = await fetch(path, { cache: "no-store" });
-          if (!res.ok) continue;
-          const payload = await res.json();
-          loaded.push(normalizePayload(payload));
-          loadedNames.push(path);
-        } catch (_) {
-          // continue
+      let loaded = [];
+      let loadedNames = [];
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        loaded = [];
+        loadedNames = [];
+        failedDetails = [];
+
+        for (const path of defaultJsons) {
+          try {
+            const res = await fetch(path, { cache: "no-store" });
+            if (!res.ok) {
+              failedDetails.push(`${path} (${res.status})`);
+              continue;
+            }
+            const payload = await res.json();
+            loaded.push(normalizePayload(payload));
+            loadedNames.push(path);
+          } catch (err) {
+            failedDetails.push(`${path} (${err?.message || "fetch failed"})`);
+          }
+        }
+
+        if (loaded.length) break;
+        if (attempt < 3) {
+          setStatus(`No JSON loaded yet. Retrying (${attempt}/2)...`);
+          await delay(1000 * attempt);
         }
       }
+
       if (!loaded.length) throw new Error("No default JSON files found");
       state.rows = mergeRows(loaded);
+      state.selected.clear();
       refreshSportFilterOptions();
       setStatus(`Loaded ${state.rows.length} cards from ${loadedNames.length} file(s).`);
       applyFilters();
     } catch (err) {
       state.rows = [];
       state.filtered = [];
+      state.selected.clear();
       render();
       setStatus("Could not auto-load default JSON.");
-      setError(
-        "If you opened this file directly (file://), run a local server: `cd Inventory && python3 -m http.server 8000` then open http://localhost:8000/view.html"
-      );
+      const isFileProtocol = window.location.protocol === "file:";
+      const guidance = isFileProtocol
+        ? "Opened via file://. Run a local server: `cd /Users/richardsmith/Documents/TCDB Inventory && python3 -m http.server 8000` then open http://localhost:8000/view.html."
+        : "Try a hard refresh (Cmd+Shift+R). If hosted, JSON files may still be deploying.";
+      const failureSample = failedDetails.length ? ` Failed: ${failedDetails.slice(0, 3).join("; ")}.` : "";
+      setError(`${guidance}${failureSample}`);
     }
   }
 
@@ -290,6 +352,29 @@
     state.page = Math.min(pages, state.page + 1);
     render();
   });
+
+  els.rows.addEventListener("change", (ev) => {
+    const target = ev.target;
+    if (!(target instanceof HTMLInputElement) || !target.classList.contains("row-check")) return;
+    const key = target.dataset.rowKey || "";
+    if (!key) return;
+    if (target.checked) state.selected.add(key);
+    else state.selected.delete(key);
+    render();
+  });
+
+  if (els.selectPage) {
+    els.selectPage.addEventListener("change", () => {
+      const start = (state.page - 1) * state.pageSize;
+      const pageRows = state.filtered.slice(start, start + state.pageSize);
+      for (const r of pageRows) {
+        const key = rowKey(r);
+        if (els.selectPage.checked) state.selected.add(key);
+        else state.selected.delete(key);
+      }
+      render();
+    });
+  }
 
   loadDefault();
 })();
