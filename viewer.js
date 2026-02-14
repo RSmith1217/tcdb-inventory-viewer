@@ -15,18 +15,34 @@
     sortBy: document.getElementById("sortBy"),
     sportFilter: document.getElementById("sportFilter"),
     pageSize: document.getElementById("pageSize"),
+    inStockOnly: document.getElementById("inStockOnly"),
+    selectedOnly: document.getElementById("selectedOnly"),
+
     shownCount: document.getElementById("shownCount"),
     totalCount: document.getElementById("totalCount"),
     unitsCount: document.getElementById("unitsCount"),
     selectedCount: document.getElementById("selectedCount"),
     selectedUnits: document.getElementById("selectedUnits"),
     selectedTotal: document.getElementById("selectedTotal"),
+
     status: document.getElementById("status"),
     error: document.getElementById("error"),
     rows: document.getElementById("rows"),
     prevBtn: document.getElementById("prevBtn"),
     nextBtn: document.getElementById("nextBtn"),
     pageInfo: document.getElementById("pageInfo"),
+
+    cartItems: document.getElementById("cartItems"),
+    checkoutName: document.getElementById("checkoutName"),
+    checkoutEmail: document.getElementById("checkoutEmail"),
+    checkoutPayment: document.getElementById("checkoutPayment"),
+    checkoutShipping: document.getElementById("checkoutShipping"),
+    checkoutNotes: document.getElementById("checkoutNotes"),
+    copyOrderBtn: document.getElementById("copyOrderBtn"),
+    emailOrderBtn: document.getElementById("emailOrderBtn"),
+    downloadCsvBtn: document.getElementById("downloadCsvBtn"),
+    clearCartBtn: document.getElementById("clearCartBtn"),
+    orderPreview: document.getElementById("orderPreview"),
   };
 
   const FALLBACK_JSONS = [
@@ -46,7 +62,6 @@
 
   async function discoverDefaultJsons() {
     try {
-      // Works with python -m http.server directory listing.
       const res = await fetch("./data/", { cache: "no-store" });
       if (!res.ok) return FALLBACK_JSONS;
       const html = await res.text();
@@ -57,7 +72,6 @@
 
       if (!names.length) return FALLBACK_JSONS;
 
-      // Prefer inventory/manual files first, then any other JSON files in ./data.
       const preferred = names.filter((n) => n.startsWith("tcdb_inventory") || n === "manual_cards.json");
       const other = names.filter((n) => !preferred.includes(n));
       return [...preferred, ...other].map((n) => `./data/${n}`);
@@ -94,117 +108,6 @@
     return `${r.sport || ""}|${r.card_url || ""}|${r.set_name || ""}|${r.card_number || ""}|${r.card_name || ""}`;
   }
 
-  function setError(msg) {
-    els.error.hidden = !msg;
-    els.error.textContent = msg || "";
-  }
-
-  function setStatus(msg) {
-    els.status.textContent = msg;
-  }
-
-  function applyFilters() {
-    const q = els.q.value.trim().toLowerCase();
-    const minP = els.minPrice.value === "" ? null : asNum(els.minPrice.value, null);
-    const maxP = els.maxPrice.value === "" ? null : asNum(els.maxPrice.value, null);
-    const minQ = els.minQty.value === "" ? null : asNum(els.minQty.value, null);
-    const sport = els.sportFilter.value.trim().toLowerCase();
-
-    let rows = state.rows.filter((r) => {
-      const price = r.tcdb_price == null ? null : asNum(r.tcdb_price, null);
-      const qty = asNum(r.quantity, 1);
-
-      if (q && !rowText(r).includes(q)) return false;
-      if (sport && String(r.sport || "").toLowerCase() !== sport) return false;
-      if (minP != null && (price == null || price < minP)) return false;
-      if (maxP != null && (price == null || price > maxP)) return false;
-      if (minQ != null && qty < minQ) return false;
-      return true;
-    });
-
-    rows.sort(sorter(els.sortBy.value));
-    state.filtered = rows;
-    state.page = 1;
-    render();
-  }
-
-  function sorter(mode) {
-    switch (mode) {
-      case "name_desc":
-        return (a, b) => String(b.card_name || "").localeCompare(String(a.card_name || ""));
-      case "set_asc":
-        return (a, b) => String(a.set_name || "").localeCompare(String(b.set_name || ""));
-      case "sport_asc":
-        return (a, b) => String(a.sport || "").localeCompare(String(b.sport || ""));
-      case "qty_desc":
-        return (a, b) => asNum(b.quantity, 1) - asNum(a.quantity, 1);
-      case "qty_asc":
-        return (a, b) => asNum(a.quantity, 1) - asNum(b.quantity, 1);
-      case "price_desc":
-        return (a, b) => asNum(b.tcdb_price, -1) - asNum(a.tcdb_price, -1);
-      case "price_asc":
-        return (a, b) => asNum(a.tcdb_price, Infinity) - asNum(b.tcdb_price, Infinity);
-      case "name_asc":
-      default:
-        return (a, b) => String(a.card_name || "").localeCompare(String(b.card_name || ""));
-    }
-  }
-
-  function render() {
-    state.pageSize = asNum(els.pageSize.value, 50);
-    const total = state.filtered.length;
-    const pages = Math.max(1, Math.ceil(total / state.pageSize));
-    if (state.page > pages) state.page = pages;
-
-    const start = (state.page - 1) * state.pageSize;
-    const pageRows = state.filtered.slice(start, start + state.pageSize);
-
-    els.rows.innerHTML = pageRows
-      .map((r, i) => {
-        const idx = start + i + 1;
-        const href = r.card_url || "";
-        const name = r.card_name || r.player || "";
-        const key = rowKey(r);
-        const maxQty = Math.max(0, asNum(r.quantity, 1));
-        const selectedQty = Math.min(maxQty, Math.max(0, asNum(state.selectedQty.get(key), 0)));
-        const qtyOptions = Array.from({ length: maxQty + 1 }, (_, n) =>
-          `<option value="${n}" ${n === selectedQty ? "selected" : ""}>${n}</option>`
-        ).join("");
-        return `<tr>
-          <td><select class="row-qty" data-row-key="${escapeAttr(key)}">${qtyOptions}</select></td>
-          <td>${idx}</td>
-          <td>${escapeHtml(r.sport || "")}</td>
-          <td>${escapeHtml(r.set_name || "")}</td>
-          <td>${escapeHtml(r.card_number || "")}</td>
-          <td class="name">${escapeHtml(name)}</td>
-          <td>${asNum(r.quantity, 1)}</td>
-          <td>${money(r.tcdb_price)}</td>
-          <td>${money(myPrice(r.tcdb_price))}</td>
-          <td>${href ? `<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">Open</a>` : "-"}</td>
-        </tr>`;
-      })
-      .join("");
-
-    const selectedRows = state.rows.filter((r) => asNum(state.selectedQty.get(rowKey(r)), 0) > 0);
-    const selectedUnits = selectedRows.reduce((s, r) => s + asNum(state.selectedQty.get(rowKey(r)), 0), 0);
-    const selectedTotal = selectedRows.reduce((s, r) => s + (myPrice(r.tcdb_price) || 0) * asNum(state.selectedQty.get(rowKey(r)), 0), 0);
-
-    els.shownCount.textContent = String(total);
-    els.totalCount.textContent = String(state.rows.length);
-    els.unitsCount.textContent = String(state.filtered.reduce((s, r) => s + asNum(r.quantity, 1), 0));
-    if (els.selectedCount) els.selectedCount.textContent = String(selectedRows.length);
-    if (els.selectedUnits) els.selectedUnits.textContent = String(selectedUnits);
-    if (els.selectedTotal) els.selectedTotal.textContent = money(selectedTotal);
-    els.pageInfo.textContent = `Page ${state.page} / ${pages}`;
-
-    els.prevBtn.disabled = state.page <= 1;
-    els.nextBtn.disabled = state.page >= pages;
-
-    if (!pageRows.length) {
-      els.rows.innerHTML = '<tr><td colspan="10">No matching cards.</td></tr>';
-    }
-  }
-
   function escapeHtml(s) {
     return String(s)
       .replaceAll("&", "&amp;")
@@ -216,6 +119,15 @@
 
   function escapeAttr(s) {
     return escapeHtml(s);
+  }
+
+  function setError(msg) {
+    els.error.hidden = !msg;
+    els.error.textContent = msg || "";
+  }
+
+  function setStatus(msg) {
+    els.status.textContent = msg;
   }
 
   function delay(ms) {
@@ -245,9 +157,7 @@
     for (const rows of listOfRows) {
       for (const r of rows) {
         const key = `${r.sport || ""}|${r.card_url || ""}`;
-        if (!byKey.has(key)) {
-          byKey.set(key, r);
-        }
+        if (!byKey.has(key)) byKey.set(key, r);
       }
     }
     return [...byKey.values()];
@@ -259,18 +169,239 @@
       a.localeCompare(b)
     );
 
-    els.sportFilter.innerHTML = '<option value="">All Sports</option>' +
-      sports.map((s) => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join("");
+    els.sportFilter.innerHTML =
+      '<option value="">All Sports</option>' + sports.map((s) => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join("");
 
     if (sports.some((s) => s.toLowerCase() === current.toLowerCase())) {
       els.sportFilter.value = current;
     }
   }
 
+  function selectedQtyForRow(r) {
+    const key = rowKey(r);
+    const maxQty = Math.max(0, asNum(r.quantity, 1));
+    const selected = Math.max(0, asNum(state.selectedQty.get(key), 0));
+    return Math.min(maxQty, selected);
+  }
+
+  function getSelectedRows() {
+    return state.rows
+      .map((r) => ({ row: r, qty: selectedQtyForRow(r) }))
+      .filter((x) => x.qty > 0);
+  }
+
+  function sorter(mode) {
+    switch (mode) {
+      case "name_desc":
+        return (a, b) => String(b.card_name || "").localeCompare(String(a.card_name || ""));
+      case "set_asc":
+        return (a, b) => String(a.set_name || "").localeCompare(String(b.set_name || ""));
+      case "sport_asc":
+        return (a, b) => String(a.sport || "").localeCompare(String(b.sport || ""));
+      case "qty_desc":
+        return (a, b) => asNum(b.quantity, 1) - asNum(a.quantity, 1);
+      case "qty_asc":
+        return (a, b) => asNum(a.quantity, 1) - asNum(b.quantity, 1);
+      case "price_desc":
+        return (a, b) => asNum(b.tcdb_price, -1) - asNum(a.tcdb_price, -1);
+      case "price_asc":
+        return (a, b) => asNum(a.tcdb_price, Infinity) - asNum(b.tcdb_price, Infinity);
+      case "my_price_desc":
+        return (a, b) => asNum(myPrice(b.tcdb_price), -1) - asNum(myPrice(a.tcdb_price), -1);
+      case "my_price_asc":
+        return (a, b) => asNum(myPrice(a.tcdb_price), Infinity) - asNum(myPrice(b.tcdb_price), Infinity);
+      case "name_asc":
+      default:
+        return (a, b) => String(a.card_name || "").localeCompare(String(b.card_name || ""));
+    }
+  }
+
+  function applyFilters() {
+    const q = els.q.value.trim().toLowerCase();
+    const minP = els.minPrice.value === "" ? null : asNum(els.minPrice.value, null);
+    const maxP = els.maxPrice.value === "" ? null : asNum(els.maxPrice.value, null);
+    const minQ = els.minQty.value === "" ? null : asNum(els.minQty.value, null);
+    const sport = els.sportFilter.value.trim().toLowerCase();
+    const inStockOnly = !!els.inStockOnly.checked;
+    const selectedOnly = !!els.selectedOnly.checked;
+
+    let rows = state.rows.filter((r) => {
+      const tcdb = r.tcdb_price == null ? null : asNum(r.tcdb_price, null);
+      const listQty = asNum(r.quantity, 1);
+      const mine = myPrice(tcdb);
+      const selQty = selectedQtyForRow(r);
+
+      if (q && !rowText(r).includes(q)) return false;
+      if (sport && String(r.sport || "").toLowerCase() !== sport) return false;
+      if (minP != null && (mine == null || mine < minP)) return false;
+      if (maxP != null && (mine == null || mine > maxP)) return false;
+      if (minQ != null && listQty < minQ) return false;
+      if (inStockOnly && listQty < 1) return false;
+      if (selectedOnly && selQty < 1) return false;
+      return true;
+    });
+
+    rows.sort(sorter(els.sortBy.value));
+    state.filtered = rows;
+    state.page = 1;
+    render();
+  }
+
+  function buildOrderSummary(selectedRows) {
+    const buyer = els.checkoutName.value.trim() || "(not provided)";
+    const email = els.checkoutEmail.value.trim() || "(not provided)";
+    const payment = els.checkoutPayment.value;
+    const shipping = els.checkoutShipping.value;
+    const notes = els.checkoutNotes.value.trim() || "(none)";
+    const stamp = new Date().toLocaleString();
+
+    const units = selectedRows.reduce((s, x) => s + x.qty, 0);
+    const total = selectedRows.reduce((s, x) => s + asNum(myPrice(x.row.tcdb_price), 0) * x.qty, 0);
+
+    const lines = selectedRows.map((x, idx) => {
+      const r = x.row;
+      const name = r.card_name || r.player || "(unnamed card)";
+      const setName = r.set_name || "(set unknown)";
+      const cardNo = r.card_number || "-";
+      const unit = asNum(myPrice(r.tcdb_price), 0);
+      const line = unit * x.qty;
+      return `${idx + 1}. ${name} | ${r.sport || ""} | ${setName} #${cardNo} | Qty ${x.qty} x ${money(unit)} = ${money(line)}`;
+    });
+
+    return [
+      "TCDB CARD ORDER REQUEST",
+      `Created: ${stamp}`,
+      "",
+      `Buyer: ${buyer}`,
+      `Email: ${email}`,
+      `Payment: ${payment}`,
+      `Shipping: ${shipping}`,
+      `Notes: ${notes}`,
+      "",
+      "Items:",
+      ...(lines.length ? lines : ["(no items selected)"]),
+      "",
+      `Selected cards: ${selectedRows.length}`,
+      `Selected units: ${units}`,
+      `Order total: ${money(total)}`,
+    ].join("\n");
+  }
+
+  function buildCsv(selectedRows) {
+    const header = ["Card Name", "Sport", "Set", "Card #", "Qty", "Unit Price", "Line Total", "Link"];
+    const lines = [header.join(",")];
+
+    for (const x of selectedRows) {
+      const r = x.row;
+      const unit = asNum(myPrice(r.tcdb_price), 0);
+      const lineTotal = unit * x.qty;
+      const cols = [
+        r.card_name || r.player || "",
+        r.sport || "",
+        r.set_name || "",
+        r.card_number || "",
+        String(x.qty),
+        unit.toFixed(2),
+        lineTotal.toFixed(2),
+        r.card_url || "",
+      ].map((v) => `"${String(v).replaceAll('"', '""')}"`);
+      lines.push(cols.join(","));
+    }
+
+    return lines.join("\n");
+  }
+
+  function renderCart(selectedRows) {
+    if (!selectedRows.length) {
+      els.cartItems.innerHTML = '<p class="cart-empty">No cards selected yet.</p>';
+      return;
+    }
+
+    els.cartItems.innerHTML = selectedRows
+      .slice(0, 200)
+      .map((x) => {
+        const r = x.row;
+        const name = escapeHtml(r.card_name || r.player || "(unnamed card)");
+        const setText = escapeHtml(r.set_name || "(set unknown)");
+        const cardNo = escapeHtml(r.card_number || "-");
+        const unit = asNum(myPrice(r.tcdb_price), 0);
+        const line = unit * x.qty;
+        return `<div class="cart-row">
+          <strong>${name}</strong>
+          <span>${escapeHtml(r.sport || "")} | ${setText} #${cardNo}</span><br />
+          <span>${x.qty} x ${money(unit)} = ${money(line)}</span>
+        </div>`;
+      })
+      .join("");
+  }
+
+  function render() {
+    state.pageSize = asNum(els.pageSize.value, 50);
+    const total = state.filtered.length;
+    const pages = Math.max(1, Math.ceil(total / state.pageSize));
+    if (state.page > pages) state.page = pages;
+
+    const start = (state.page - 1) * state.pageSize;
+    const pageRows = state.filtered.slice(start, start + state.pageSize);
+
+    els.rows.innerHTML = pageRows
+      .map((r, i) => {
+        const idx = start + i + 1;
+        const href = r.card_url || "";
+        const key = rowKey(r);
+        const name = r.card_name || r.player || "";
+        const avail = Math.max(0, asNum(r.quantity, 1));
+        const chosen = selectedQtyForRow(r);
+        const unit = myPrice(r.tcdb_price);
+        const qtyOptions = Array.from({ length: avail + 1 }, (_, n) =>
+          `<option value="${n}" ${n === chosen ? "selected" : ""}>${n}</option>`
+        ).join("");
+        const line = unit == null ? null : unit * chosen;
+
+        return `<tr>
+          <td><select class="row-qty" data-row-key="${escapeAttr(key)}">${qtyOptions}</select></td>
+          <td>${idx}</td>
+          <td class="name">${escapeHtml(name)}</td>
+          <td>${escapeHtml(r.sport || "")}</td>
+          <td>${escapeHtml(r.set_name || "")}</td>
+          <td>${escapeHtml(r.card_number || "")}</td>
+          <td>${avail}</td>
+          <td>${money(r.tcdb_price)}</td>
+          <td>${money(unit)}</td>
+          <td class="line-total">${money(line)}</td>
+          <td>${href ? `<a href="${escapeAttr(href)}" target="_blank" rel="noopener noreferrer">Open</a>` : "-"}</td>
+        </tr>`;
+      })
+      .join("");
+
+    if (!pageRows.length) {
+      els.rows.innerHTML = '<tr><td colspan="11">No matching cards.</td></tr>';
+    }
+
+    const selectedRows = getSelectedRows();
+    const selectedUnits = selectedRows.reduce((s, x) => s + x.qty, 0);
+    const selectedTotal = selectedRows.reduce((s, x) => s + asNum(myPrice(x.row.tcdb_price), 0) * x.qty, 0);
+
+    els.shownCount.textContent = String(total);
+    els.totalCount.textContent = String(state.rows.length);
+    els.unitsCount.textContent = String(state.filtered.reduce((s, r) => s + asNum(r.quantity, 1), 0));
+    els.selectedCount.textContent = String(selectedRows.length);
+    els.selectedUnits.textContent = String(selectedUnits);
+    els.selectedTotal.textContent = money(selectedTotal);
+
+    els.pageInfo.textContent = `Page ${state.page} / ${pages}`;
+    els.prevBtn.disabled = state.page <= 1;
+    els.nextBtn.disabled = state.page >= pages;
+
+    renderCart(selectedRows);
+    els.orderPreview.textContent = buildOrderSummary(selectedRows);
+  }
+
   async function loadDefault() {
     let failedDetails = [];
     setError("");
     setStatus("Loading default JSON files...");
+
     try {
       const defaultJsons = await discoverDefaultJsons();
       let loaded = [];
@@ -304,17 +435,19 @@
       }
 
       if (!loaded.length) throw new Error("No default JSON files found");
+
       state.rows = mergeRows(loaded);
       state.selectedQty.clear();
       refreshSportFilterOptions();
       setStatus(`Loaded ${state.rows.length} cards from ${loadedNames.length} file(s).`);
       applyFilters();
-    } catch (err) {
+    } catch (_) {
       state.rows = [];
       state.filtered = [];
       state.selectedQty.clear();
       render();
       setStatus("Could not auto-load default JSON.");
+
       const isFileProtocol = window.location.protocol === "file:";
       const guidance = isFileProtocol
         ? "Opened via file://. Run a local server: `cd /Users/richardsmith/Documents/TCDB Inventory && python3 -m http.server 8000` then open http://localhost:8000/view.html."
@@ -324,32 +457,95 @@
     }
   }
 
-  [els.q, els.minPrice, els.maxPrice, els.minQty, els.sortBy, els.pageSize, els.sportFilter].forEach((el) => {
-    el.addEventListener("input", applyFilters);
-    el.addEventListener("change", applyFilters);
-  });
+  function bindEvents() {
+    [
+      els.q,
+      els.minPrice,
+      els.maxPrice,
+      els.minQty,
+      els.sortBy,
+      els.sportFilter,
+      els.pageSize,
+      els.inStockOnly,
+      els.selectedOnly,
+    ].forEach((el) => {
+      el.addEventListener("input", applyFilters);
+      el.addEventListener("change", applyFilters);
+    });
 
-  els.prevBtn.addEventListener("click", () => {
-    state.page = Math.max(1, state.page - 1);
-    render();
-  });
+    [els.checkoutName, els.checkoutEmail, els.checkoutPayment, els.checkoutShipping, els.checkoutNotes].forEach((el) => {
+      el.addEventListener("input", render);
+      el.addEventListener("change", render);
+    });
 
-  els.nextBtn.addEventListener("click", () => {
-    const pages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
-    state.page = Math.min(pages, state.page + 1);
-    render();
-  });
+    els.prevBtn.addEventListener("click", () => {
+      state.page = Math.max(1, state.page - 1);
+      render();
+    });
 
-  els.rows.addEventListener("change", (ev) => {
-    const target = ev.target;
-    if (!(target instanceof HTMLSelectElement) || !target.classList.contains("row-qty")) return;
-    const key = target.dataset.rowKey || "";
-    if (!key) return;
-    const qty = Math.max(0, asNum(target.value, 0));
-    if (qty <= 0) state.selectedQty.delete(key);
-    else state.selectedQty.set(key, qty);
-    render();
-  });
+    els.nextBtn.addEventListener("click", () => {
+      const pages = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+      state.page = Math.min(pages, state.page + 1);
+      render();
+    });
 
+    els.rows.addEventListener("change", (ev) => {
+      const target = ev.target;
+      if (!(target instanceof HTMLSelectElement) || !target.classList.contains("row-qty")) return;
+      const key = target.dataset.rowKey || "";
+      if (!key) return;
+      const qty = Math.max(0, asNum(target.value, 0));
+      if (qty <= 0) state.selectedQty.delete(key);
+      else state.selectedQty.set(key, qty);
+      if (els.selectedOnly.checked) applyFilters();
+      else render();
+    });
+
+    els.clearCartBtn.addEventListener("click", () => {
+      state.selectedQty.clear();
+      if (els.selectedOnly.checked) applyFilters();
+      else render();
+    });
+
+    els.copyOrderBtn.addEventListener("click", async () => {
+      const text = els.orderPreview.textContent || "";
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatus("Order summary copied to clipboard.");
+      } catch (_) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        setStatus("Order summary copied to clipboard.");
+      }
+    });
+
+    els.emailOrderBtn.addEventListener("click", () => {
+      const subject = encodeURIComponent("Card Order Request");
+      const body = encodeURIComponent(els.orderPreview.textContent || "");
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    });
+
+    els.downloadCsvBtn.addEventListener("click", () => {
+      const selectedRows = getSelectedRows();
+      const csv = buildCsv(selectedRows);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().replaceAll(":", "-").slice(0, 19);
+      a.href = url;
+      a.download = `tcdb-order-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus("CSV downloaded.");
+    });
+  }
+
+  bindEvents();
   loadDefault();
 })();

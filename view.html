@@ -3,252 +3,508 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TCDB Inventory Viewer</title>
+    <title>TCDB Card Store</title>
     <style>
       :root {
-        --bg: #f7f7f8;
+        --bg-1: #fff7ef;
+        --bg-2: #f4f9ff;
         --panel: #ffffff;
-        --text: #1f2328;
-        --muted: #5b6570;
-        --line: #d0d7de;
-        --accent: #7a0000;
+        --panel-alt: #f7fafc;
+        --line: #d6dde5;
+        --text: #1e2631;
+        --muted: #5e6d80;
+        --accent: #a3002d;
+        --accent-2: #0e5aa7;
       }
 
-      * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
       body {
         margin: 0;
-        font-family: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: linear-gradient(180deg, #faf7f7 0%, var(--bg) 100%);
+        font-family: Manrope, "Avenir Next", "Segoe UI", sans-serif;
         color: var(--text);
+        background:
+          radial-gradient(circle at 0% 0%, #ffe9d4 0%, transparent 38%),
+          radial-gradient(circle at 100% 100%, #dbeeff 0%, transparent 42%),
+          linear-gradient(160deg, var(--bg-1), var(--bg-2));
       }
 
       .wrap {
-        max-width: 1200px;
+        max-width: 1480px;
         margin: 0 auto;
-        padding: 1.2rem;
+        padding: 1.1rem;
+      }
+
+      .hero {
+        background: linear-gradient(120deg, #ffffff 0%, #fff3ea 40%, #eef6ff 100%);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 1rem 1.1rem;
+        box-shadow: 0 10px 28px rgba(19, 35, 61, 0.08);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.65rem;
+        letter-spacing: 0.01em;
+      }
+
+      .hero-sub {
+        margin: 0.25rem 0 0;
+        color: var(--muted);
+        font-size: 0.96rem;
+      }
+
+      .build {
+        margin-top: 0.45rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+      }
+
+      .layout {
+        margin-top: 0.9rem;
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 2.2fr) minmax(300px, 1fr);
+        align-items: start;
       }
 
       .panel {
         background: var(--panel);
         border: 1px solid var(--line);
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 8px 25px rgba(20, 20, 20, 0.04);
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(18, 37, 63, 0.06);
       }
 
-      h1 {
-        margin: 0 0 0.35rem;
-        font-size: 1.5rem;
-      }
-
-      .sub {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.95rem;
+      .catalog {
+        padding: 0.9rem;
       }
 
       .controls {
-        margin-top: 1rem;
         display: grid;
-        gap: 0.7rem;
-        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 0.6rem;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       }
 
       label {
         display: grid;
         gap: 0.3rem;
-        font-size: 0.85rem;
         color: var(--muted);
+        font-size: 0.84rem;
       }
 
       input,
       select,
+      textarea,
       button {
         border: 1px solid var(--line);
         border-radius: 10px;
-        padding: 0.55rem 0.65rem;
+        padding: 0.52rem 0.62rem;
         font: inherit;
+        color: var(--text);
         background: #fff;
+      }
+
+      textarea {
+        resize: vertical;
+      }
+
+      .check {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        margin-top: 0.22rem;
+      }
+
+      .check input {
+        width: auto;
       }
 
       button {
         cursor: pointer;
+        transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
       }
 
       .btn-primary {
-        border-color: #b58b90;
+        background: #fff6fa;
+        border-color: #e7a5ba;
         color: var(--accent);
         font-weight: 700;
       }
 
-      .stats {
-        margin-top: 0.9rem;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        font-size: 0.95rem;
+      .btn-secondary {
+        background: #f4f8fd;
+        border-color: #a9c3df;
+        color: #224b72;
+        font-weight: 600;
       }
 
-      .stats span { color: var(--muted); }
-      .stats .money-strong { color: var(--accent); }
+      .btn-danger {
+        background: #fff5f2;
+        border-color: #efb6a8;
+        color: #8e2f18;
+        font-weight: 700;
+      }
+
+      .stats {
+        margin-top: 0.75rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 0.45rem;
+      }
+
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel-alt);
+        padding: 0.45rem 0.55rem;
+      }
+
+      .stat strong {
+        display: block;
+        font-size: 1rem;
+      }
+
+      .stat span {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .stat.money strong {
+        color: var(--accent);
+      }
+
+      .hint {
+        margin: 0.65rem 0 0;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .error {
+        margin: 0.45rem 0 0;
+        color: #9f2d12;
+        font-size: 0.86rem;
+      }
 
       .table-wrap {
-        margin-top: 1rem;
+        margin-top: 0.85rem;
         overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 12px;
       }
 
       table {
         width: 100%;
+        min-width: 1120px;
         border-collapse: collapse;
-        min-width: 940px;
       }
 
       th,
       td {
-        text-align: left;
         border-bottom: 1px solid var(--line);
-        padding: 0.5rem 0.45rem;
-        font-size: 0.9rem;
+        text-align: left;
         vertical-align: top;
+        padding: 0.52rem 0.48rem;
+        font-size: 0.88rem;
       }
 
       th {
         color: var(--muted);
-        font-weight: 700;
+        background: #f8fbff;
         position: sticky;
         top: 0;
-        background: #fff;
+        z-index: 1;
       }
 
       td.name {
-        max-width: 420px;
+        max-width: 360px;
+      }
+
+      .line-total {
+        color: var(--accent);
+        font-weight: 700;
       }
 
       .pager {
-        margin-top: 0.9rem;
+        margin-top: 0.7rem;
         display: flex;
-        gap: 0.5rem;
+        gap: 0.45rem;
         align-items: center;
         flex-wrap: wrap;
       }
 
-      .hint {
-        margin-top: 0.8rem;
+      .checkout {
+        position: sticky;
+        top: 0.75rem;
+        padding: 0.9rem;
+      }
+
+      .checkout h2 {
+        margin: 0;
+        font-size: 1.08rem;
+      }
+
+      .checkout-sub {
+        margin: 0.25rem 0 0.7rem;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+
+      .cart-items {
+        max-height: 230px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel-alt);
+        padding: 0.45rem;
+      }
+
+      .cart-row {
+        padding: 0.42rem;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .cart-row:last-child {
+        border-bottom: 0;
+      }
+
+      .cart-empty {
         color: var(--muted);
         font-size: 0.86rem;
       }
 
-      .error {
-        margin-top: 0.8rem;
-        color: #8d2020;
-        font-size: 0.9rem;
+      .cart-row strong {
+        display: block;
+        font-size: 0.84rem;
       }
 
-      a { color: #0b5db2; text-decoration: none; }
-      a:hover { text-decoration: underline; }
+      .cart-row span {
+        color: var(--muted);
+        font-size: 0.78rem;
+      }
+
+      .checkout-fields {
+        margin-top: 0.7rem;
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      .checkout-actions {
+        margin-top: 0.72rem;
+        display: grid;
+        gap: 0.45rem;
+      }
+
+      .order-preview {
+        margin-top: 0.68rem;
+        border: 1px dashed #b8c7d9;
+        border-radius: 10px;
+        padding: 0.48rem;
+        background: #f5f9fe;
+        white-space: pre-wrap;
+        font-size: 0.78rem;
+        max-height: 160px;
+        overflow: auto;
+      }
+
+      a {
+        color: var(--accent-2);
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      @media (max-width: 1080px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+
+        .checkout {
+          position: static;
+        }
+
+        table {
+          min-width: 940px;
+        }
+      }
     </style>
   </head>
   <body>
     <main class="wrap">
-      <section class="panel">
-        <h1>TCDB Inventory Viewer</h1>
-        <p class="sub">Local viewer for JSON files in <code>Inventory/data/</code>.</p>
+      <section class="hero">
+        <h1>TCDB Card Store</h1>
+        <p class="hero-sub">Browse cards, pick exact quantities, and generate a ready-to-send order summary.</p>
+        <p id="buildId" class="build">Build 2026-02-14.2</p>
+      </section>
 
-        <div class="controls">
-          <label>
-            Search
-            <input id="q" type="text" placeholder="set, player, card #" />
-          </label>
+      <section class="layout">
+        <section class="panel catalog">
+          <div class="controls">
+            <label>
+              Search
+              <input id="q" type="text" placeholder="player, set, card #" />
+            </label>
 
-          <label>
-            Min Price
-            <input id="minPrice" type="number" step="0.01" min="0" placeholder="0.00" />
-          </label>
+            <label>
+              Min My Price
+              <input id="minPrice" type="number" step="0.01" min="0" placeholder="0.00" />
+            </label>
 
-          <label>
-            Max Price
-            <input id="maxPrice" type="number" step="0.01" min="0" placeholder="50.00" />
-          </label>
+            <label>
+              Max My Price
+              <input id="maxPrice" type="number" step="0.01" min="0" placeholder="50.00" />
+            </label>
 
-          <label>
-            Min Qty
-            <input id="minQty" type="number" min="1" placeholder="1" />
-          </label>
+            <label>
+              Min Available
+              <input id="minQty" type="number" min="1" placeholder="1" />
+            </label>
 
-          <label>
-            Sort
-            <select id="sortBy">
-              <option value="name_asc">Name (A-Z)</option>
-              <option value="name_desc">Name (Z-A)</option>
-              <option value="sport_asc">Sport (A-Z)</option>
-              <option value="set_asc">Set (A-Z)</option>
-              <option value="qty_desc">Quantity (high-low)</option>
-              <option value="qty_asc">Quantity (low-high)</option>
-              <option value="price_desc">Price (high-low)</option>
-              <option value="price_asc">Price (low-high)</option>
-            </select>
-          </label>
+            <label>
+              Sort
+              <select id="sortBy">
+                <option value="my_price_asc">My Price (low-high)</option>
+                <option value="my_price_desc">My Price (high-low)</option>
+                <option value="name_asc">Card Name (A-Z)</option>
+                <option value="name_desc">Card Name (Z-A)</option>
+                <option value="sport_asc">Sport (A-Z)</option>
+                <option value="set_asc">Set (A-Z)</option>
+                <option value="qty_desc">Available Qty (high-low)</option>
+                <option value="qty_asc">Available Qty (low-high)</option>
+                <option value="price_desc">TCDB Price (high-low)</option>
+                <option value="price_asc">TCDB Price (low-high)</option>
+              </select>
+            </label>
 
-          <label>
-            Sport
-            <select id="sportFilter">
-              <option value="">All Sports</option>
-            </select>
-          </label>
+            <label>
+              Sport
+              <select id="sportFilter">
+                <option value="">All Sports</option>
+              </select>
+            </label>
 
-          <label>
-            Rows / page
-            <select id="pageSize">
-              <option>25</option>
-              <option selected>50</option>
-              <option>100</option>
-              <option>200</option>
-            </select>
-          </label>
+            <label>
+              Rows / page
+              <select id="pageSize">
+                <option>25</option>
+                <option selected>50</option>
+                <option>100</option>
+                <option>200</option>
+              </select>
+            </label>
+          </div>
 
-        </div>
+          <div class="controls" style="margin-top: 0.42rem; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));">
+            <label class="check"><input id="inStockOnly" type="checkbox" checked /> In-stock only</label>
+            <label class="check"><input id="selectedOnly" type="checkbox" /> Selected items only</label>
+          </div>
 
-        <div class="stats">
-          <div><strong id="shownCount">0</strong> <span>shown</span></div>
-          <div><strong id="totalCount">0</strong> <span>total cards</span></div>
-          <div><strong id="unitsCount">0</strong> <span>total units</span></div>
-          <div><strong id="selectedCount">0</strong> <span>selected cards</span></div>
-          <div><strong id="selectedUnits">0</strong> <span>selected units</span></div>
-          <div><strong id="selectedTotal" class="money-strong">$0.00</strong> <span>selected total</span></div>
-        </div>
+          <div class="stats">
+            <div class="stat"><strong id="shownCount">0</strong><span>shown</span></div>
+            <div class="stat"><strong id="totalCount">0</strong><span>total cards</span></div>
+            <div class="stat"><strong id="unitsCount">0</strong><span>available units</span></div>
+            <div class="stat"><strong id="selectedCount">0</strong><span>selected cards</span></div>
+            <div class="stat"><strong id="selectedUnits">0</strong><span>selected units</span></div>
+            <div class="stat money"><strong id="selectedTotal">$0.00</strong><span>selected total</span></div>
+          </div>
 
-        <p id="status" class="hint">Loading default JSON...</p>
-        <p id="error" class="error" hidden></p>
+          <p id="status" class="hint">Loading default JSON...</p>
+          <p id="error" class="error" hidden></p>
 
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Buy Qty</th>
-                <th>#</th>
-                <th>Sport</th>
-                <th>Set</th>
-                <th>Card #</th>
-                <th>Name</th>
-                <th>Qty</th>
-                <th>TCDB $</th>
-                <th>My Price</th>
-                <th>Link</th>
-              </tr>
-            </thead>
-            <tbody id="rows"></tbody>
-          </table>
-        </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Buy Qty</th>
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Sport</th>
+                  <th>Set</th>
+                  <th>Card #</th>
+                  <th>Avail</th>
+                  <th>TCDB $</th>
+                  <th>My Price</th>
+                  <th>Line Total</th>
+                  <th>Link</th>
+                </tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
 
-        <div class="pager">
-          <button id="prevBtn" type="button">Prev</button>
-          <span id="pageInfo">Page 1 / 1</span>
-          <button id="nextBtn" type="button">Next</button>
-        </div>
+          <div class="pager">
+            <button id="prevBtn" type="button" class="btn-secondary">Prev</button>
+            <span id="pageInfo">Page 1 / 1</span>
+            <button id="nextBtn" type="button" class="btn-secondary">Next</button>
+          </div>
+        </section>
+
+        <aside class="panel checkout">
+          <h2>Checkout Builder</h2>
+          <p class="checkout-sub">Create an order request you can copy, email, or export as CSV.</p>
+
+          <div id="cartItems" class="cart-items">
+            <p class="cart-empty">No cards selected yet.</p>
+          </div>
+
+          <div class="checkout-fields">
+            <label>
+              Buyer Name
+              <input id="checkoutName" type="text" placeholder="Your name" />
+            </label>
+
+            <label>
+              Email
+              <input id="checkoutEmail" type="email" placeholder="you@example.com" />
+            </label>
+
+            <label>
+              Payment Method
+              <select id="checkoutPayment">
+                <option value="PayPal">PayPal</option>
+                <option value="Venmo">Venmo</option>
+                <option value="Cash App">Cash App</option>
+                <option value="Zelle">Zelle</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+
+            <label>
+              Shipping Preference
+              <select id="checkoutShipping">
+                <option value="PWE">PWE</option>
+                <option value="BMWT">BMWT</option>
+                <option value="Local pickup">Local pickup</option>
+                <option value="Seller choice">Seller choice</option>
+              </select>
+            </label>
+
+            <label>
+              Notes
+              <textarea id="checkoutNotes" rows="3" placeholder="Any additional notes..."></textarea>
+            </label>
+          </div>
+
+          <div class="checkout-actions">
+            <button id="copyOrderBtn" class="btn-primary" type="button">Copy Order Summary</button>
+            <button id="emailOrderBtn" class="btn-secondary" type="button">Build Email Draft</button>
+            <button id="downloadCsvBtn" class="btn-secondary" type="button">Download CSV</button>
+            <button id="clearCartBtn" class="btn-danger" type="button">Clear Cart</button>
+          </div>
+
+          <pre id="orderPreview" class="order-preview">Order preview will appear here.</pre>
+        </aside>
       </section>
     </main>
 
-    <script src="viewer.js?v=20260214-1"></script>
+    <script src="viewer.js?v=20260214-2"></script>
   </body>
 </html>
