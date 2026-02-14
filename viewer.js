@@ -14,7 +14,6 @@
     sortBy: document.getElementById("sortBy"),
     sportFilter: document.getElementById("sportFilter"),
     pageSize: document.getElementById("pageSize"),
-    fileInput: document.getElementById("fileInput"),
     reloadBtn: document.getElementById("reloadBtn"),
     shownCount: document.getElementById("shownCount"),
     totalCount: document.getElementById("totalCount"),
@@ -261,28 +260,8 @@
       render();
       setStatus("Could not auto-load default JSON.");
       setError(
-        "If you opened this file directly (file://), use 'Load JSON Files' or run a local server: `cd Inventory && python3 -m http.server 8000` then open http://localhost:8000/view.html"
+        "If you opened this file directly (file://), run a local server: `cd Inventory && python3 -m http.server 8000` then open http://localhost:8000/view.html"
       );
-    }
-  }
-
-  async function loadFromFile(files) {
-    if (!files || !files.length) return;
-    setError("");
-    setStatus(`Loading ${files.length} file(s)...`);
-    try {
-      const rowsBatches = [];
-      for (const file of files) {
-        const text = await file.text();
-        const payload = JSON.parse(text);
-        rowsBatches.push(normalizePayload(payload));
-      }
-      state.rows = mergeRows(rowsBatches);
-      refreshSportFilterOptions();
-      setStatus(`Loaded ${state.rows.length} cards from ${files.length} file(s).`);
-      applyFilters();
-    } catch (err) {
-      setError(`Could not parse JSON file: ${err.message || String(err)}`);
     }
   }
 
@@ -302,7 +281,6 @@
     render();
   });
 
-  els.fileInput.addEventListener("change", (e) => loadFromFile([...((e.target && e.target.files) || [])]));
   els.reloadBtn.addEventListener("click", loadDefault);
 
   loadDefault();
